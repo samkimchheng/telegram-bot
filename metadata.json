@@ -1,0 +1,11 @@
+{
+  "name": "SecureAttend",
+  "description": "A multi-tenant employee attendance + HR/payroll system using GPS, AI Face Match, QR, and NFC.",
+  "requestFramePermissions": [
+    "camera",
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
