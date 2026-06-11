@@ -2,15 +2,39 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { MapPin, ScanFace, QrCode, Fingerprint, CheckCircle2, ChevronLeft, CalendarClock } from 'lucide-react';
+import { MapPin, ScanFace, QrCode, Fingerprint, CheckCircle2, ChevronLeft, CalendarClock, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
+
+const Map = dynamic(() => import('@/components/Map'), { ssr: false });
+const FaceScanner = dynamic(() => import('@/components/FaceScanner'), { ssr: false });
 
 type CheckInMethod = 'gps' | 'face' | 'qr' | 'nfc' | null;
 
+const OFFICE_LOCATION = { lat: 11.5564, lng: 104.9282 }; // Example: Phnom Penh
+const RADIUS_METERS = 100;
+
+function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 6371e3; // metres
+  const p1 = lat1 * Math.PI/180;
+  const p2 = lat2 * Math.PI/180;
+  const dp = (lat2-lat1) * Math.PI/180;
+  const dl = (lon2-lon1) * Math.PI/180;
+
+  const a = Math.sin(dp/2) * Math.sin(dp/2) +
+            Math.cos(p1) * Math.cos(p2) *
+            Math.sin(dl/2) * Math.sin(dl/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+  return R * c;
+}
+
 export default function CheckInPage() {
   const [method, setMethod] = useState<CheckInMethod>(null);
-  const [status, setStatus] = useState<'idle' | 'scanning' | 'success'>('idle');
+  const [status, setStatus] = useState<'idle' | 'gps_view' | 'scanning' | 'success'>('idle');
   const [location, setLocation] = useState<{lat: number, lng: number} | null>(null);
+  const [distance, setDistance] = useState<number | null>(null);
+  const [showFaceScanner, setShowFaceScanner] = useState(false);
 
   const methods = [
     { id: 'gps', icon: MapPin, title: 'GPS Geofencing', color: 'bg-blue-50 text-blue-600 border-blue-200' },
@@ -19,23 +43,36 @@ export default function CheckInPage() {
     { id: 'nfc', icon: Fingerprint, title: 'NFC Tag', color: 'bg-purple-50 text-purple-600 border-purple-200' },
   ] as const;
 
-  const handleSimulateScan = (m: CheckInMethod) => {
+  const handleSelectMethod = (m: CheckInMethod) => {
     setMethod(m);
+    if (m === 'gps') {
+      setStatus('gps_view');
+    } else if (m === 'face') {
+      setShowFaceScanner(true);
+    } else {
+      setStatus('scanning');
+      setTimeout(() => setStatus('success'), 2000);
+    }
+  };
+
+  const handleAction = (action: 'in' | 'out') => {
     setStatus('scanning');
-    
-    // Simulate API Call
     setTimeout(() => {
       setStatus('success');
     }, 2000);
   };
 
   useEffect(() => {
-    if (method === 'gps' && navigator.geolocation) {
-       navigator.geolocation.getCurrentPosition((pos) => {
-         setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-       });
+    if (status === 'gps_view' && navigator.geolocation) {
+       const watchId = navigator.geolocation.watchPosition((pos) => {
+         const lat = pos.coords.latitude;
+         const lng = pos.coords.longitude;
+         setLocation({ lat, lng });
+         setDistance(getDistance(lat, lng, OFFICE_LOCATION.lat, OFFICE_LOCATION.lng));
+       }, undefined, { enableHighAccuracy: true });
+       return () => navigator.geolocation.clearWatch(watchId);
     }
-  }, [method]);
+  }, [status]);
 
   return (
     <div className="min-h-screen bg-slate-50 font-kantumruy flex items-center justify-center p-4">
@@ -73,7 +110,7 @@ export default function CheckInPage() {
                   {methods.map((m) => (
                     <button
                       key={m.id}
-                      onClick={() => handleSimulateScan(m.id)}
+                      onClick={() => handleSelectMethod(m.id)}
                       className={`flex flex-col items-center justify-center gap-3 p-4 rounded-2xl border transition-all hover:shadow-md ${m.color}`}
                     >
                       <m.icon className="w-8 h-8" />
@@ -81,6 +118,62 @@ export default function CheckInPage() {
                     </button>
                   ))}
                 </div>
+              </motion.div>
+            )}
+
+            {status === 'gps_view' && (
+              <motion.div
+                key="gps_view"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="flex flex-col h-full"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold text-slate-800 flex items-center gap-2">
+                    <MapPin className="w-5 h-5 text-indigo-500" />
+                    តំបន់ការងារ (Office Zone)
+                  </h3>
+                  {distance !== null && (
+                    <span className={`text-xs font-bold px-2 py-1 rounded uppercase tracking-wider ${distance <= RADIUS_METERS ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
+                      {distance <= RADIUS_METERS ? 'IN ZONE' : 'TOO FAR'}
+                    </span>
+                  )}
+                </div>
+
+                <div className="h-48 w-full bg-slate-100 rounded-2xl mb-6 relative">
+                  <Map userLocation={location} officeLocation={OFFICE_LOCATION} radius={RADIUS_METERS} />
+                </div>
+
+                <div className="flex gap-4">
+                  <button 
+                    disabled={distance === null || distance > RADIUS_METERS}
+                    onClick={() => handleAction('in')}
+                    className="flex-1 bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-300 text-white font-medium py-3 rounded-xl transition-all disabled:cursor-not-allowed"
+                  >
+                    Check IN
+                  </button>
+                  <button 
+                    disabled={distance === null || distance > RADIUS_METERS}
+                    onClick={() => handleAction('out')}
+                    className="flex-1 bg-rose-500 hover:bg-rose-600 disabled:bg-slate-300 text-white font-medium py-3 rounded-xl transition-all disabled:cursor-not-allowed"
+                  >
+                    Check OUT
+                  </button>
+                </div>
+                
+                {distance !== null && distance > RADIUS_METERS && (
+                  <p className="text-xs text-red-500 text-center mt-3 flex items-center justify-center gap-1">
+                    <AlertCircle className="w-4 h-4" />
+                    អ្នកនៅឆ្ងាយពីកន្លែងធ្វើការ ({Math.round(distance)}m)
+                  </p>
+                )}
+                <button 
+                  onClick={() => { setStatus('idle'); setMethod(null); }}
+                  className="mt-4 text-sm text-slate-500 hover:text-slate-700 w-full font-medium"
+                >
+                  ត្រឡប់ក្រោយ
+                </button>
               </motion.div>
             )}
 
@@ -139,6 +232,23 @@ export default function CheckInPage() {
           </AnimatePresence>
         </div>
       </div>
+      {showFaceScanner && (
+        <FaceScanner
+          mode="verify"
+          onVerificationSuccess={() => {
+            setShowFaceScanner(false);
+            setStatus('success');
+          }}
+          onVerificationFail={() => {
+            // Already handled by UI showing error, but we can reset or let user close
+          }}
+          onCancel={() => {
+            setShowFaceScanner(false);
+            setMethod(null);
+            setStatus('idle');
+          }}
+        />
+      )}
     </div>
   );
 }

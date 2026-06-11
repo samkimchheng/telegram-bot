@@ -3,4 +3,12 @@
 @theme {
   --font-kantumruy: var(--font-kantumruy), sans-serif;
   --font-inter: var(--font-inter), sans-serif;
+  
+  --color-brand-primary: var(--color-indigo-600);
+  --color-brand-secondary: var(--color-violet-600);
+  --color-brand-surface: #ffffff;
+  --color-brand-background: #f8fafc;
+  
+  --shadow-brand-soft: 0 4px 20px -2px rgba(79, 70, 229, 0.1);
+  --shadow-brand: 0 10px 25px -5px rgba(79, 70, 229, 0.2);
 }
