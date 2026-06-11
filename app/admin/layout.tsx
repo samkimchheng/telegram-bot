@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Users, QrCode, MessageCircle, Settings, LogOut, ArrowRight, CalendarCheck, Wallet, Badge } from 'lucide-react';
+import { Users, QrCode, MessageCircle, Settings, LogOut, ArrowRight, CalendarCheck, Wallet, Badge, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 
@@ -69,6 +69,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   const navItems = [
+    { name: 'Dashboard Overview', href: '/admin', icon: TrendingUp },
     { name: 'Admin Kiosk / Manual Entry', href: '/admin/manual', icon: Users },
     { name: 'Employees', href: '/admin/employees', icon: Users },
     { name: 'ID Cards & NFC', href: '/admin/cards', icon: Badge },
