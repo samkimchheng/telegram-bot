@@ -1,4 +1,7 @@
+'use client';
+
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { LayoutDashboard, Users, CalendarCheck, Wallet, Settings, Bell, ChevronLeft, QrCode } from 'lucide-react';
 
 export default function DashboardLayout({
@@ -6,6 +9,8 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
+
   return (
     <div className="min-h-screen bg-slate-50 flex font-kantumruy">
       {/* Sidebar */}
@@ -20,17 +25,17 @@ export default function DashboardLayout({
         </div>
         <nav className="flex-1 px-4 mt-4 space-y-1">
           {[
-            { icon: LayoutDashboard, label: 'ទិដ្ឋភាពទូទៅ', path: '/dashboard', active: true },
-            { icon: Users, label: 'បុគ្គលិក', path: '/dashboard/employees', active: false },
-            { icon: CalendarCheck, label: 'របាយការណ៍វត្តមាន', path: '/dashboard/attendance', active: false },
-            { icon: QrCode, label: 'QR Station / កូដ QR', path: '/dashboard/qr-station', active: false },
-            { icon: Wallet, label: 'បញ្ជីប្រាក់ខែ', path: '/dashboard/payroll', active: false },
+            { icon: LayoutDashboard, label: 'ទិដ្ឋភាពទូទៅ', path: '/dashboard' },
+            { icon: Users, label: 'បុគ្គលិក', path: '/dashboard/employees' },
+            { icon: CalendarCheck, label: 'របាយការណ៍វត្តមាន', path: '/dashboard/attendance' },
+            { icon: QrCode, label: 'QR Station / កូដ QR', path: '/dashboard/qr-station' },
+            { icon: Wallet, label: 'បញ្ជីប្រាក់ខែ', path: '/dashboard/payroll' },
           ].map((item, i) => (
             <Link
               key={i}
               href={item.path}
               className={`flex items-center gap-3 p-3 rounded-lg text-base font-medium transition-colors ${
-                item.active 
+                pathname === item.path
                   ? 'bg-white/10 text-indigo-100' 
                   : 'text-indigo-200 hover:bg-white/5'
               }`}
