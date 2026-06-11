@@ -197,6 +197,7 @@ export default function QrStationPage() {
           
           <div className="bg-white p-6 rounded-3xl shadow-xl shadow-indigo-100/50 border border-slate-100 flex flex-col items-center">
             {qrDataUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
               <img src={qrDataUrl} alt="Office QR Code" className="w-64 h-64 md:w-80 md:h-80" />
             ) : (
               <div className="w-64 h-64 md:w-80 md:h-80 bg-slate-100 rounded-2xl animate-pulse flex items-center justify-center text-slate-400">

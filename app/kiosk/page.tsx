@@ -89,7 +89,6 @@ export default function KioskPage() {
           type="text"
           value={inputVal}
           onChange={(e) => setInputVal(e.target.value)}
-          autoFocus
           onBlur={() => setTimeout(() => inputRef.current?.focus(), 10)}
         />
       </form>
