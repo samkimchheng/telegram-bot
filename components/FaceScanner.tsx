@@ -85,7 +85,15 @@ export default function FaceScanner({ mode, onRegistrationSuccess, onVerificatio
       }
     } else if (mode === 'verify') {
       // Retrieve stored descriptor
-      const storedData = localStorage.getItem('enrolled_face');
+      // Determine employee code
+      const activeCode = localStorage.getItem('employee_code');
+      if (!activeCode) {
+        setErrorMSG('ឧបករណ៍នេះមិនទាន់បានភ្ជាប់ (Device not activated).');
+        if (onVerificationFail) onVerificationFail();
+        return;
+      }
+      
+      const storedData = localStorage.getItem(`enrolled_face_${activeCode}`);
       if (!storedData) {
         setErrorMSG('មិនទាន់មានទិន្នន័យផ្ទៃមុខ។ សូមចុះឈ្មោះជាមុន។ (No face enrolled)');
         if (onVerificationFail) onVerificationFail();

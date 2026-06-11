@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { LayoutDashboard, Users, CalendarCheck, Wallet, Settings, Bell, ChevronLeft } from 'lucide-react';
+import { LayoutDashboard, Users, CalendarCheck, Wallet, Settings, Bell, ChevronLeft, QrCode } from 'lucide-react';
 
 export default function DashboardLayout({
   children,
@@ -23,6 +23,7 @@ export default function DashboardLayout({
             { icon: LayoutDashboard, label: 'ទិដ្ឋភាពទូទៅ', path: '/dashboard', active: true },
             { icon: Users, label: 'បុគ្គលិក', path: '/dashboard/employees', active: false },
             { icon: CalendarCheck, label: 'របាយការណ៍វត្តមាន', path: '/dashboard/attendance', active: false },
+            { icon: QrCode, label: 'QR Station / កូដ QR', path: '/dashboard/qr-station', active: false },
             { icon: Wallet, label: 'បញ្ជីប្រាក់ខែ', path: '/dashboard/payroll', active: false },
           ].map((item, i) => (
             <Link

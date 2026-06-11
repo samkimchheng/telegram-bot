@@ -12,18 +12,20 @@ CREATE TABLE tenants (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Users (Employees/Admins)
-CREATE TABLE users (
+-- Employees (Users)
+CREATE TABLE employees (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    full_name VARCHAR(255) NOT NULL,
+    employee_code VARCHAR(50) UNIQUE NOT NULL,
+    name VARCHAR(255) NOT NULL,
     khmer_name VARCHAR(255),
-    role VARCHAR(50) NOT NULL DEFAULT 'employee', -- 'admin', 'manager', 'employee'
-    face_encoding JSONB, -- For AI face match
-    telegram_chat_id VARCHAR(50),
+    department VARCHAR(100),
+    role VARCHAR(50) NOT NULL DEFAULT 'employee',
+    face_descriptor JSONB, -- For AI face match (Float32Array converted to JSON array)
+    telegram_id VARCHAR(100),
     nfc_tag_id VARCHAR(100),
     qr_code_id VARCHAR(100) UNIQUE,
+    active BOOLEAN DEFAULT true,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -41,7 +43,7 @@ CREATE TABLE geofences (
 -- Attendance Records
 CREATE TABLE attendance (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    employee_code VARCHAR(50) REFERENCES employees(employee_code) ON DELETE CASCADE,
     tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
     check_in_time TIMESTAMP WITH TIME ZONE,
     check_out_time TIMESTAMP WITH TIME ZONE,
@@ -55,7 +57,7 @@ CREATE TABLE attendance (
 -- Payroll Records
 CREATE TABLE payroll (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    employee_code VARCHAR(50) REFERENCES employees(employee_code) ON DELETE CASCADE,
     tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
     month DATE NOT NULL,
     base_salary DECIMAL NOT NULL,

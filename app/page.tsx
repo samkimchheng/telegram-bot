@@ -65,7 +65,7 @@ export default function Home() {
             
             <div className="flex flex-col gap-4 w-full md:w-auto shrink-0">
               <Link
-                href="/check-in"
+                href="/activate"
                 className="w-full md:w-64 px-6 py-4 rounded-2xl bg-gradient-to-r from-brand-primary to-brand-secondary text-white font-bold hover:shadow-lg hover:shadow-indigo-500/25 hover:-translate-y-0.5 transition-all flex items-center justify-between group"
               >
                 <span>ចូលកត់វត្តមានមុខងារ</span>
