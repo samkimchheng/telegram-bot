@@ -20,8 +20,10 @@ export default function ActivatePage() {
     if (activeCode && enrolledFace) {
       router.replace('/check-in');
     } else if (activeCode && !enrolledFace) {
-      setEmployeeCode(activeCode);
-      setStep('enroll_face');
+      setTimeout(() => {
+        setEmployeeCode(activeCode);
+        setStep('enroll_face');
+      }, 0);
     }
   }, [router]);
 

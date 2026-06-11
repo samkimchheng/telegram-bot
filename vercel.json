@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/bot/payslip",
+      "schedule": "0 0 1 * *"
+    }
+  ]
+}

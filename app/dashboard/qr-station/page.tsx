@@ -2,12 +2,16 @@
 
 import { useState, useEffect, useRef } from 'react';
 import QRCode from 'qrcode';
-import { RefreshCw, Download, Printer, QrCode as QrIcon } from 'lucide-react';
+import { RefreshCw, Download, Printer, QrCode as QrIcon, UserCheck } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
+import dynamic from 'next/dynamic';
+
+const QRScanner = dynamic(() => import('@/components/QRScanner'), { ssr: false });
 
 export default function QrStationPage() {
   const [secret, setSecret] = useState<string>('');
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
+  const [showEmployeeScanner, setShowEmployeeScanner] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const generateNewSecret = () => {
@@ -19,9 +23,9 @@ export default function QrStationPage() {
   useEffect(() => {
     const storedSecret = localStorage.getItem('office_qr_secret');
     if (storedSecret) {
-      setSecret(storedSecret);
+      setTimeout(() => setSecret(storedSecret), 0);
     } else {
-      generateNewSecret();
+      setTimeout(() => generateNewSecret(), 0);
     }
   }, []);
 
@@ -88,6 +92,48 @@ export default function QrStationPage() {
     }
   };
 
+  const handleScanEmployee = async (result?: string) => {
+    setShowEmployeeScanner(false);
+    if (!result) return;
+    
+    // Result format expected: SECATT-EMP:EMP-001:abcd1234abcd1234
+    const parts = result.split(':');
+    if (parts.length === 3 && parts[0] === 'SECATT-EMP') {
+      const code = parts[1];
+      const token = parts[2];
+      
+      // Verify token
+      const msgBuffer = new TextEncoder().encode(code + secret);
+      const hashBuffer = await window.crypto.subtle.digest('SHA-256', msgBuffer);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      const expectedToken = hashHex.substring(0, 16);
+      
+      if (token === expectedToken) {
+        // Record Check-in for this employee
+        try {
+          await fetch('/api/check-in', {
+             method: 'POST',
+             headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify({
+               employeeCode: code,
+               action: 'in', // Assume check-in or simple scan
+               method: 'kiosk',
+               location: { lat: 0, lng: 0 }
+             })
+          });
+          alert(`Successfully authenticated. Checked in: ${code}`);
+        } catch (e) {
+          alert('Failed to check in.');
+        }
+      } else {
+        alert('Invalid or forged employee card!');
+      }
+    } else {
+      alert('Unrecognized QR format.');
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto h-full flex flex-col font-kantumruy space-y-6">
       <div className="flex items-center justify-between">
@@ -124,12 +170,21 @@ export default function QrStationPage() {
             <div className="pt-4 border-t border-slate-200 mt-4">
               <button 
                 onClick={generateNewSecret}
-                className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-xl font-bold transition-all"
+                className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-xl font-bold transition-all mb-4"
               >
                 <RefreshCw className="w-5 h-5" />
                 ប្តូរកូដថ្មី (Regenerate Secret)
               </button>
-              <p className="text-xs text-slate-400 mt-2 text-center">
+              
+              <button 
+                onClick={() => setShowEmployeeScanner(true)}
+                className="w-full flex items-center justify-center gap-2 py-4 px-4 bg-slate-800 text-white hover:bg-slate-900 rounded-xl font-bold transition-all shadow-md"
+              >
+                <UserCheck className="w-5 h-5" />
+                Kiosk Mode: Scan Employee ID
+              </button>
+
+              <p className="text-xs text-slate-400 mt-4 text-center">
                 សម្គាល់៖ ការប្តូរកូដថ្មីនឹងធ្វើឱ្យ QR ចាស់លែងមានសុពលភាព។
               </p>
             </div>
@@ -158,6 +213,14 @@ export default function QrStationPage() {
           </div>
         </div>
       </div>
+      
+      {showEmployeeScanner && (
+        <QRScanner 
+          mode="employee"
+          onScanSuccess={handleScanEmployee}
+          onCancel={() => setShowEmployeeScanner(false)}
+        />
+      )}
     </div>
   );
 }

@@ -12,8 +12,7 @@ const QRScanner = dynamic(() => import('@/components/QRScanner'), { ssr: false }
 
 type CheckInMethod = 'gps' | 'face' | 'qr' | 'nfc' | null;
 
-const OFFICE_LOCATION = { lat: 11.5564, lng: 104.9282 }; // Example: Phnom Penh
-const RADIUS_METERS = 100;
+const DEFAULT_OFFICE = { lat: 11.5564, lng: 104.9282, radius: 100 };
 
 function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371e3; // metres
@@ -37,6 +36,9 @@ export default function CheckInPage() {
   const [distance, setDistance] = useState<number | null>(null);
   const [showFaceScanner, setShowFaceScanner] = useState(false);
   const [showQRScanner, setShowQRScanner] = useState(false);
+  const [officeConfig, setOfficeConfig] = useState(DEFAULT_OFFICE);
+  const [isSubstituting, setIsSubstituting] = useState(false);
+  const [substituteFor, setSubstituteFor] = useState('');
 
   const methods = [
     { id: 'gps', icon: MapPin, title: 'GPS Geofencing', color: 'bg-blue-50 text-blue-600 border-blue-200' },
@@ -63,9 +65,11 @@ export default function CheckInPage() {
 
   useEffect(() => {
     const code = localStorage.getItem('employee_code');
-    if (code) {
-      setActiveCode(code);
-    }
+    const configStr = localStorage.getItem('office_config');
+    setTimeout(() => {
+      if (code) setActiveCode(code);
+      if (configStr) setOfficeConfig(JSON.parse(configStr));
+    }, 0);
   }, []);
 
   const handleAction = async (action: 'in' | 'out') => {
@@ -81,6 +85,7 @@ export default function CheckInPage() {
           action,
           method,
           location,
+          substituteFor: isSubstituting ? substituteFor : null
         })
       });
       if (response.ok) {
@@ -100,11 +105,11 @@ export default function CheckInPage() {
          const lat = pos.coords.latitude;
          const lng = pos.coords.longitude;
          setLocation({ lat, lng });
-         setDistance(getDistance(lat, lng, OFFICE_LOCATION.lat, OFFICE_LOCATION.lng));
+         setDistance(getDistance(lat, lng, officeConfig.lat, officeConfig.lng));
        }, undefined, { enableHighAccuracy: true });
        return () => navigator.geolocation.clearWatch(watchId);
     }
-  }, [status]);
+  }, [status, officeConfig.lat, officeConfig.lng]);
 
   return (
     <div className="min-h-screen bg-slate-50 font-kantumruy flex items-center justify-center p-4">
@@ -138,6 +143,27 @@ export default function CheckInPage() {
                   <CalendarClock className="w-5 h-5 text-indigo-500" />
                   ជ្រើសរើសរបៀបកត់វត្តមាន
                 </h3>
+                
+                <div className="mb-6 p-4 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col gap-3">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      onChange={(e) => setIsSubstituting(e.target.checked)}
+                      className="w-4 h-4 text-indigo-600 rounded"
+                    />
+                    <span className="text-sm font-medium text-slate-700">កត់វត្តមានជំនួស (Substituting for someone)</span>
+                  </label>
+                  {isSubstituting && (
+                    <input 
+                      type="text" 
+                      placeholder="បញ្ចូលលេខកូដអ្នកដែលត្រូវជំនួស (ឧ. EMP-002)"
+                      value={substituteFor}
+                      onChange={(e) => setSubstituteFor(e.target.value.toUpperCase())}
+                      className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:border-indigo-500 uppercase"
+                    />
+                  )}
+                </div>
+
                 <div className="grid grid-cols-2 gap-4">
                   {methods.map((m) => (
                     <button
@@ -167,26 +193,26 @@ export default function CheckInPage() {
                     តំបន់ការងារ (Office Zone)
                   </h3>
                   {distance !== null && (
-                    <span className={`text-xs font-bold px-2 py-1 rounded uppercase tracking-wider ${distance <= RADIUS_METERS ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
-                      {distance <= RADIUS_METERS ? 'IN ZONE' : 'TOO FAR'}
+                    <span className={`text-xs font-bold px-2 py-1 rounded uppercase tracking-wider ${distance <= officeConfig.radius ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
+                      {distance <= officeConfig.radius ? 'IN ZONE' : 'TOO FAR'}
                     </span>
                   )}
                 </div>
 
                 <div className="h-48 w-full bg-slate-100 rounded-2xl mb-6 relative">
-                  <Map userLocation={location} officeLocation={OFFICE_LOCATION} radius={RADIUS_METERS} />
+                  <Map userLocation={location} officeLocation={{lat: officeConfig.lat, lng: officeConfig.lng}} radius={officeConfig.radius} />
                 </div>
 
                 <div className="flex gap-4">
                   <button 
-                    disabled={distance === null || distance > RADIUS_METERS}
+                    disabled={distance === null || distance > officeConfig.radius}
                     onClick={() => handleAction('in')}
                     className="flex-1 bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-300 text-white font-medium py-3 rounded-xl transition-all disabled:cursor-not-allowed"
                   >
                     Check IN
                   </button>
                   <button 
-                    disabled={distance === null || distance > RADIUS_METERS}
+                    disabled={distance === null || distance > officeConfig.radius}
                     onClick={() => handleAction('out')}
                     className="flex-1 bg-rose-500 hover:bg-rose-600 disabled:bg-slate-300 text-white font-medium py-3 rounded-xl transition-all disabled:cursor-not-allowed"
                   >
@@ -194,7 +220,7 @@ export default function CheckInPage() {
                   </button>
                 </div>
                 
-                {distance !== null && distance > RADIUS_METERS && (
+                {distance !== null && distance > officeConfig.radius && (
                   <p className="text-xs text-red-500 text-center mt-3 flex items-center justify-center gap-1">
                     <AlertCircle className="w-4 h-4" />
                     អ្នកនៅឆ្ងាយពីកន្លែងធ្វើការ ({Math.round(distance)}m)
