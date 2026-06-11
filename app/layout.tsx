@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({children}: {children: React.ReactNode}) {
   return (
-    <html lang="en" className={`${kantumruy.variable} ${inter.variable}`}>
+    <html lang="en" className={`${kantumruy.variable} ${inter.variable}`} suppressHydrationWarning>
       <body className="font-kantumruy bg-slate-50 text-slate-900 antialiased" suppressHydrationWarning>
         <script src="https://telegram.org/js/telegram-web-app.js" async></script>
         {children}
